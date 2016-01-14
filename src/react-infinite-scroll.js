@@ -18,6 +18,7 @@ module.exports = function (React) {
         loadMore: function () {},
         threshold: 250,
         domViewport: window,
+        continueManually: false
       };
     },
     componentDidMount: function () {
@@ -25,11 +26,21 @@ module.exports = function (React) {
       this.attachScrollListener();
     },
     componentDidUpdate: function () {
-      this.attachScrollListener();
+      if (!this.props.continueManually) {
+        this.attachScrollListener();
+      }
     },
     render: function () {
       var props = this.props;
-      return React.DOM.div(null, props.children, props.hasMore && (props.loader || InfiniteScroll._defaultLoader));
+      if (this.props.direction === 'top') {
+        return React.DOM.div(
+          null,
+          props.hasMore && (props.loader || InfiniteScroll._defaultLoader),
+          props.children
+        );
+      } else {
+        return React.DOM.div(null, props.children, props.hasMore && (props.loader || InfiniteScroll._defaultLoader));
+      }
     },
     scrollListener: function () {
       var el = this.getDOMNode();
@@ -39,8 +50,15 @@ module.exports = function (React) {
       } else {
         scrollTop = this.props.domViewport.scrollTop;
       }
-      
-      if (topPosition(el) + el.offsetHeight - scrollTop - window.innerHeight < Number(this.props.threshold)) {
+
+      var position;
+      if (this.props.direction === 'top') {
+        position = scrollTop <= Number(this.props.threshold);
+      } else {
+        position = topPosition(el) + el.offsetHeight - scrollTop - window.innerHeight < Number(this.props.threshold);
+      }
+
+      if (position) {
         this.detachScrollListener();
         // call loadMore after detachScrollListener to allow
         // for non-async loadMore functions
